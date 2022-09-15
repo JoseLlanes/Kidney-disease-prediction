@@ -47,6 +47,21 @@ def stat_print(list_x, name, precision=4, quantile=False):
             "; Max. = ", np.round(np.nanmax(list_x), precision)
         )
 
+
+def obtain_stats(col_x):
+    dict_result = {
+        "min": np.nanmin( col_x ),
+        "perct25": np.nanpercentile( col_x, 25 ),
+        "mean": np.nanmean( col_x ),
+        "median": np.nanmedian( col_x ),
+        "std": np.nanstd( col_x ),
+        "perct75": np.nanpercentile( col_x, 75 ),
+        "max": np.nanmax( col_x )
+    }
+    
+    return dict_result
+
+        
 def make_binary_plot(data, x_feat, x_name, y_feat, y_name, violin_plot=False):
     
     group_list = [df_g[y_feat].tolist() for g, df_g in data.groupby(x_feat)]

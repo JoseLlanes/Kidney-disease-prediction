@@ -4,6 +4,5 @@ scikit-learn
 pandas
 notebook
 matplotlib
-lifelines
 seaborn
 mlxtend

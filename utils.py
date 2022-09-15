@@ -9,9 +9,13 @@ import scipy as sp
 import scipy.stats as stats
 
 from scipy.spatial.distance import pdist, squareform
+
 from sklearn import linear_model
 from sklearn.cluster import KMeans
 from sklearn.metrics import r2_score
+
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.ensemble import ExtraTreesClassifier
 
 
 def get_p_string(p):
@@ -110,7 +114,49 @@ def make_scatter_plot(df, x_feat, x_name, y_feat, y_name, alpha_th=0.6, fontsize
 
     plt.show()
 
+    
+def get_feature_importance(data, target,
+                           features_to_use,
+                           num_repeats=4, num_splits=10, 
+                           model=ExtraTreesClassifier(n_estimators=400, max_depth=30, random_state=0), 
+                           verbose=False):
+    
+    rskf = RepeatedStratifiedKFold(n_splits=num_splits, n_repeats=num_repeats, random_state=rdm_th)
 
+    y_data = data[target]
+    x_data = data[features_to_use]
+
+    save_feature_imp = []
+    metrcis_dict = {
+        "Accuracy": [],
+        "Kappa": [],
+        "RocAUC": [],
+    }
+    for i_split, (train_index, test_index) in enumerate(rskf.split(x_data, y_data)):
+        
+        if verbose:
+            print("Split", i_split+1, end="\r")
+        
+        x_train, x_test = x_data.loc[train_index], x_data.loc[test_index]
+        y_train, y_test = y_data.loc[train_index], y_data.loc[test_index]
+
+        model.fit(x_train, y_train)
+
+        df_imp_feat = pd.DataFrame(model.feature_importances_).T
+        df_imp_feat.columns = features_to_use
+
+        save_feature_imp.append(df_imp_feat)
+        
+        y_pred = model.predict(x_test)
+        y_pred_proba = model.predict_proba(x_test)[:, 1]
+        
+        metrcis_dict["Accuracy"].append(sk_metrics.accuracy_score(y_test, y_pred))
+        metrcis_dict["Kappa"].append(sk_metrics.cohen_kappa_score(y_test, y_pred))
+        metrcis_dict["RocAUC"].append(sk_metrics.roc_auc_score(y_test, y_pred_proba))
+        
+    return pd.concat(save_feature_imp), metrcis_dict
+    
+    
 def get_mahalanobis_dist(x_arr, centers=None):
     if centers is None:
         centers = np.mean(x_arr, axis=0)

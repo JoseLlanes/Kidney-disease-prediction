@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 import pandas as pd
-import scipy as sp
-import scipy.stats as stats
 
+import scipy.stats as stats
+from scipy.cluster.hierarchy import dendrogram
 from scipy.spatial.distance import pdist, squareform
 
 from sklearn import linear_model
@@ -166,3 +166,26 @@ def get_mahalanobis_dist(x_arr, centers=None):
     mahal = np.dot(left_term, (x_arr - centers).T)
 
     return mahal.diagonal()
+
+def plot_dendrogram(model, **kwargs):
+    # Create linkage matrix and then plot the dendrogram
+
+    # create the counts of samples under each node
+    counts = np.zeros(model.children_.shape[0])
+    n_samples = len(model.labels_)
+    for i, merge in enumerate(model.children_):
+        current_count = 0
+        for child_idx in merge:
+            if child_idx < n_samples:
+                current_count += 1  # leaf node
+            else:
+                current_count += counts[child_idx - n_samples]
+        counts[i] = current_count
+
+    linkage_matrix = np.column_stack(
+        [model.children_, model.distances_, counts]
+    ).astype(float)
+
+    # Plot the corresponding dendrogram
+    dendrogram(linkage_matrix, **kwargs)
+
